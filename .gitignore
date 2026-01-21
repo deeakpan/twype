@@ -12,6 +12,8 @@
 
 # testing
 /coverage
+# walletconnect example
+walletconnect/Starknet-WalletAccount
 
 # next.js
 /.next/
