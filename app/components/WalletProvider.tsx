@@ -60,7 +60,7 @@ export default function WalletProvider({ children }: { children: ReactNode }) {
               });
 
               // Follow example: connect FIRST, then request accounts
-              const account = await WalletAccountV5.connect(provider, wallet);
+              const account = await WalletAccountV5.connect(provider, wallet as any);
               
               // Now request accounts
               const accountsResult = await walletV5.requestAccounts(wallet as any);
@@ -137,7 +137,7 @@ export default function WalletProvider({ children }: { children: ReactNode }) {
 
       // Follow example pattern EXACTLY: connect FIRST, then request accounts
       console.log('1️⃣ Connecting WalletAccountV5...');
-      const account = await WalletAccountV5.connect(provider, selectedWallet);
+      const account = await WalletAccountV5.connect(provider, selectedWallet as any);
       console.log('✅ WalletAccount created:', account.address);
 
       // Now request accounts - this should prompt the wallet
