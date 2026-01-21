@@ -72,7 +72,7 @@ export default function Header() {
 
           {/* Twype Text - Center */}
           <Link href="/" className="text-lg font-black text-white tracking-tight hover:text-gray-200 transition-colors flex items-center gap-1.5" style={{ fontFamily: 'var(--font-brand)' }}>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="text-white">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="text-white">
               <rect x="4" y="6" width="12" height="16" rx="2" stroke="currentColor" strokeWidth="2" fill="none"/>
               <path d="M8 10L10 12L8 14" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
               <path d="M16 10L14 12L16 14" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
@@ -183,7 +183,7 @@ export default function Header() {
             {/* Left Section: Logo and Tabs */}
             <div className="flex items-center gap-6">
               <Link href="/" className="text-2xl font-black text-white tracking-tight hover:text-gray-200 transition-colors cursor-pointer flex items-center gap-2" style={{ fontFamily: 'var(--font-brand)' }}>
-                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="text-white">
+                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="text-white">
                   <rect x="4" y="6" width="12" height="16" rx="2" stroke="currentColor" strokeWidth="2" fill="none"/>
                   <path d="M8 10L10 12L8 14" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
                   <path d="M16 10L14 12L16 14" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none"/>

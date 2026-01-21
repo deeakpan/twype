@@ -179,7 +179,7 @@ export class MarketContract {
           // The ABI format might need to match the contract class JSON format
           // If this fails, it's likely an ABI format issue - starknet.js v9 might expect
           // the full contract class JSON instead of just the ABI array
-          this.contract = new Contract(validAbi, CONTRACT_ADDRESS, this.provider);
+          this.contract = new Contract({ abi: validAbi, address: CONTRACT_ADDRESS, providerOrAccount: this.provider });
         } catch (contractError: any) {
           console.error('Contract constructor error:', contractError);
           console.error('Error details:', {
@@ -326,16 +326,19 @@ export class MarketContract {
     
     try {
       const result = await this.contract.call('get_user_bet', [marketId, userAddress]);
+      // In starknet.js v9, call results are returned as an object or array
+      const resultArray = Array.isArray(result) ? result : Object.values(result as any);
       return {
-        amount: result[0] as bigint,
-        side: result[1] as boolean,
+        amount: resultArray[0] as bigint,
+        side: resultArray[1] as boolean,
       };
     } catch (error) {
       // Fallback: try direct method call
       const result = await (this.contract as any).get_user_bet(marketId, userAddress);
+      const resultArray = Array.isArray(result) ? result : Object.values(result as any);
       return {
-        amount: result[0] as bigint,
-        side: result[1] as boolean,
+        amount: resultArray[0] as bigint,
+        side: resultArray[1] as boolean,
       };
     }
   }

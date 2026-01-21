@@ -23,7 +23,7 @@ export const metadata: Metadata = {
   title: "Twype - Tinder-Style Prediction Markets",
   description: "Swipe to bet on prediction markets on Starknet",
   icons: {
-    icon: '/icon.svg',
+    icon: '/icon.png',
   },
 };
 

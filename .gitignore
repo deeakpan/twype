@@ -15,6 +15,9 @@
 # walletconnect example
 walletconnect/Starknet-WalletAccount
 
+# demo directory
+demo/
+
 # next.js
 /.next/
 /out/
