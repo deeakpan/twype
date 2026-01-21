@@ -49,7 +49,7 @@ export default function WalletProvider({ children }: { children: ReactNode }) {
         // Check each wallet for connection
         for (const wallet of wallets) {
           try {
-            const permissions = await walletV5.getPermissions(wallet);
+            const permissions = await walletV5.getPermissions(wallet as any);
             const hasAccountsPermission = (permissions as WALLET_API.Permission[]).includes(WALLET_API.Permission.ACCOUNTS);
             
             if (hasAccountsPermission) {
@@ -63,7 +63,7 @@ export default function WalletProvider({ children }: { children: ReactNode }) {
               const account = await WalletAccountV5.connect(provider, wallet);
               
               // Now request accounts
-              const accountsResult = await walletV5.requestAccounts(wallet);
+              const accountsResult = await walletV5.requestAccounts(wallet as any);
               
               if (typeof accountsResult === 'string') {
                 continue;
@@ -142,7 +142,7 @@ export default function WalletProvider({ children }: { children: ReactNode }) {
 
       // Now request accounts - this should prompt the wallet
       console.log('2️⃣ Requesting accounts (wallet should prompt now)...');
-      const accountsResult = await walletV5.requestAccounts(selectedWallet);
+      const accountsResult = await walletV5.requestAccounts(selectedWallet as any);
       console.log('📋 Accounts result:', accountsResult);
       
       if (typeof accountsResult === 'string') {
@@ -167,7 +167,7 @@ export default function WalletProvider({ children }: { children: ReactNode }) {
       }
 
       // Check permissions to verify connection
-      const permissions = await walletV5.getPermissions(selectedWallet);
+      const permissions = await walletV5.getPermissions(selectedWallet as any);
       const hasAccountsPermission = (permissions as WALLET_API.Permission[]).includes(WALLET_API.Permission.ACCOUNTS);
       
       if (!hasAccountsPermission) {
