@@ -46,7 +46,7 @@ async function main() {
           calldata: [id],
         });
         const res = (callRes as any)?.result as string[] | undefined;
-        const resolved = res?.[3] ? BigInt(res[3]) === 1n : false;
+        const resolved = res?.[3] ? BigInt(res[3]) === BigInt(1) : false;
         if (resolved) {
           delete state.markets[id];
           saveState(state);

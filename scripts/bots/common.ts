@@ -84,6 +84,10 @@ export function getMarketContractAddress() {
 
 export function getMarketContract(providerOrAccount: RpcProvider | Account) {
   const address = getMarketContractAddress();
-  return new Contract(MARKET_ABI, address, providerOrAccount);
+  return new Contract({ 
+    abi: MARKET_ABI, 
+    address: address, 
+    providerOrAccount: providerOrAccount 
+  });
 }
 
