@@ -136,7 +136,7 @@ function extractThresholdValue(question: string, description: string): bigint | 
  * Get current price from Pragma for a pair
  */
 export async function getCurrentPrice(pairId: string): Promise<bigint> {
-  const client = getPragmaOracleClient('sepolia', 'spot');
+  const client = getPragmaOracleClient('sepolia');
   const priceData = await client.getValue(pairId);
   return priceData.value;
 }
