@@ -15,8 +15,18 @@
 # walletconnect example
 walletconnect/Starknet-WalletAccount
 
-# demo directory
+# demo directories
 demo/
+pragma-demo/
+
+# oracle directory (but keep README)
+oracle/*
+!oracle/README.md
+
+# markdown files (but keep README files)
+*.md
+!README.md
+!**/README.md
 
 # next.js
 /.next/

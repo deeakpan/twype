@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useStarknetWallet } from './components/WalletProvider';
 import Header from './components/Header';
 import PredictionCard from './components/PredictionCard';
+import ScrollReveal from './components/ScrollReveal';
 import Betslip, { Bet } from './components/Betslip';
 import DefaultBetModal from './components/DefaultBetModal';
 import { useMarkets } from './hooks/useMarkets';
@@ -233,49 +234,34 @@ export default function Home() {
     setShowDefaultModal(false);
   };
 
+  const visiblePredictions = predictions.filter((prediction) => !swipedIds.has(prediction.id));
+
   return (
-    <div className="min-h-screen bg-slate-950 pb-20 md:pb-32">
+    <div className="min-h-screen bg-slate-950 pb-20">
       <Header />
 
       <DefaultBetModal isOpen={showDefaultModal} onSetDefault={handleSetDefault} />
 
-      <div className="w-full px-4 pt-16 md:pt-24">
-        {/* Mobile: Single column */}
-        <div className="md:hidden space-y-4 pb-8">
+      {/* Centered Single Column Layout */}
+      <div className="pt-16 md:pt-24 px-4 md:px-8">
+        <div className="max-w-xl mx-auto space-y-2.5 pb-12">
           {loadingMarkets && contractMarkets.length === 0 && (
-            <div className="text-center text-gray-400 py-8">Loading markets...</div>
+            <div className="text-center text-gray-400 py-12">
+              <div className="inline-block w-8 h-8 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin"></div>
+              <p className="mt-4">Loading markets...</p>
+            </div>
           )}
-          {predictions
-            .filter((prediction) => !swipedIds.has(prediction.id))
-            .map((prediction) => (
-              <PredictionCard
-                key={prediction.id}
-                id={prediction.id}
-                question={prediction.question}
-                description={prediction.description}
-                image={prediction.image}
-                yesProbability={prediction.yesProbability}
-                stakeVolume={prediction.stakeVolume}
-                resolveDate={prediction.resolveDate}
-                onSwipe={handleBet}
-                defaultAmount={defaultAmount}
-              />
-            ))}
-          {predictions.filter((p) => !swipedIds.has(p.id)).length === 0 && (
-            <div className="text-center py-12">
-              <p className="text-xl font-semibold text-emerald-400 mb-2">No more markets!</p>
+          
+          {visiblePredictions.length === 0 && !loadingMarkets && (
+            <div className="text-center py-16">
+              <p className="text-2xl font-semibold text-emerald-400 mb-2">No more markets!</p>
               <p className="text-gray-400">Check back later for new predictions.</p>
             </div>
           )}
-        </div>
 
-        {/* Desktop: 3 column grid */}
-        <div className="hidden md:grid md:grid-cols-3 gap-4 pb-8">
-          {predictions
-            .filter((prediction) => !swipedIds.has(prediction.id))
-            .map((prediction) => (
+          {visiblePredictions.map((prediction) => (
+            <ScrollReveal key={prediction.id}>
               <PredictionCard
-                key={prediction.id}
                 id={prediction.id}
                 question={prediction.question}
                 description={prediction.description}
@@ -286,13 +272,8 @@ export default function Home() {
                 onSwipe={handleBet}
                 defaultAmount={defaultAmount}
               />
-            ))}
-          {predictions.filter((p) => !swipedIds.has(p.id)).length === 0 && (
-            <div className="col-span-3 text-center py-12">
-              <p className="text-xl font-semibold text-emerald-400 mb-2">No more markets!</p>
-              <p className="text-gray-400">Check back later for new predictions.</p>
-            </div>
-          )}
+            </ScrollReveal>
+          ))}
         </div>
       </div>
 

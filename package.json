@@ -8,7 +8,9 @@
     "start": "next start",
     "lint": "eslint",
     "deploy": "tsx scripts/deploy.ts",
-    "deploy-account": "tsx scripts/deploy-account.ts"
+    "deploy-account": "tsx scripts/deploy-account.ts",
+    "bot:listen": "tsx scripts/bots/listen-market-created.ts",
+    "bot:resolve": "tsx scripts/bots/resolve-due-markets.ts"
   },
   "dependencies": {
     "@starknet-io/get-starknet": "^4.0.0",

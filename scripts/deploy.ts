@@ -83,7 +83,8 @@ async function deploy() {
     constructorCalldata: [
       accountAddress, // admin
       '0x04718f5a0fc34cc1af16a1cdee98ffb20c31f5cd61d6ab07201858f4287c938d', // STRK token address (testnet)
-      '0x0000000000000000000000000000000000000000000000000000000000000000', // pragma_oracle (placeholder)
+      '0x36031daa264c24520b11d93af622c848b2499b66b41d611bac95e13cfca131a', // pragma_oracle (Sepolia testnet - from Pragma docs)
+      process.env.NEXT_PUBLIC_UMA_ORACLE_ADDRESS || '0x0000000000000000000000000000000000000000000000000000000000000000', // uma_oracle
       200, // platform_fee_bps (2%)
     ],
   });

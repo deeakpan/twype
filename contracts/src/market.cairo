@@ -17,11 +17,32 @@ trait IERC20<TContractState> {
     ) -> bool;
 }
 
-// Pragma Oracle Interface
-// Note: In production, import Pragma's actual interface
+
+// Chainlink Aggregator Interface
+// Note: Chainlink returns signed integers, but we'll use u256 and assume prices are positive
 #[starknet::interface]
-trait IPragmaOracle<TContractState> {
-    fn get_value(self: @TContractState, pair_id: felt252) -> (u256, u64);
+trait IChainlinkAggregator<TContractState> {
+    fn latest_round_data(
+        self: @TContractState
+    ) -> (u256, u256, u256, u256, u256);
+    
+    fn latest_answer(
+        self: @TContractState
+    ) -> u256;
+}
+
+// UMA Oracle Interface
+#[starknet::interface]
+trait IUMAOracle<TContractState> {
+    fn get_proposal(
+        self: @TContractState,
+        question_id: felt252
+    ) -> (bool, ContractAddress, u256, u64, u8);
+    
+    fn is_finalized(
+        self: @TContractState,
+        question_id: felt252
+    ) -> bool;
 }
 
 #[starknet::interface]
@@ -32,8 +53,9 @@ trait IMarket<TContractState> {
         description: felt252,
         resolution_date: u64,
         creator: ContractAddress,
-        oracle_pair_id: felt252,  // Pragma pair ID (e.g., "BTC/USD")
-        threshold_value: u256     // Threshold for YES (e.g., 100000 for 100k USD)
+        chainlink_feed_address: ContractAddress,  // Chainlink feed address (e.g., BTC/USD feed)
+        threshold_value: u256,     // Threshold for comparison (e.g., 100000 * 1e8 for $100k, Chainlink uses 8 decimals)
+        condition: u8              // 0 = less than, 1 = greater than or equal
     ) -> u32;
     
     fn place_bet(
@@ -52,6 +74,12 @@ trait IMarket<TContractState> {
         ref self: TContractState,
         market_id: u32,
         result: bool
+    );
+    
+    fn resolve_market_with_uma(
+        ref self: TContractState,
+        market_id: u32,
+        question_id: felt252
     );
     
     fn claim_payout(
@@ -77,7 +105,11 @@ mod Market {
     use starknet::storage::{
         Map, StoragePathEntry, StoragePointerReadAccess, StoragePointerWriteAccess
     };
-    use super::{IPragmaOracleDispatcher, IPragmaOracleDispatcherTrait, IERC20Dispatcher, IERC20DispatcherTrait};
+    use super::{
+        IUMAOracleDispatcher, IUMAOracleDispatcherTrait,
+        IERC20Dispatcher, IERC20DispatcherTrait,
+        IChainlinkAggregatorDispatcher, IChainlinkAggregatorDispatcherTrait
+    };
     
     #[storage]
     struct Storage {
@@ -88,6 +120,7 @@ mod Market {
         admin: ContractAddress,
         strk_token: ContractAddress,
         pragma_oracle: ContractAddress,  // Pragma oracle contract address
+        uma_oracle: ContractAddress,    // UMA oracle contract address
     }
     
     #[event]
@@ -138,8 +171,9 @@ mod Market {
         total_yes: u256,
         total_no: u256,
         total_pool: u256,
-        oracle_pair_id: felt252,  // Pragma pair ID (e.g., "BTC/USD")
-        threshold_value: u256,     // Threshold for YES (e.g., 100000 for 100k USD)
+        chainlink_feed_address: ContractAddress,  // Chainlink feed address
+        threshold_value: u256,     // Threshold for comparison (e.g., 100000 * 1e8 for $100k, Chainlink uses 8 decimals)
+        condition: u8,             // 0 = less than, 1 = greater than or equal
     }
     
     #[derive(Drop, Serde, starknet::Store)]
@@ -155,11 +189,13 @@ mod Market {
         admin: ContractAddress,
         strk_token: ContractAddress,
         pragma_oracle: ContractAddress,
+        uma_oracle: ContractAddress,
         platform_fee_bps: u16
     ) {
         self.admin.write(admin);
         self.strk_token.write(strk_token);
         self.pragma_oracle.write(pragma_oracle);
+        self.uma_oracle.write(uma_oracle);
         self.platform_fee_bps.write(platform_fee_bps);
         self.market_count.write(0);
     }
@@ -172,11 +208,13 @@ mod Market {
             description: felt252,
             resolution_date: u64,
             creator: ContractAddress,
-            oracle_pair_id: felt252,
-            threshold_value: u256
+            chainlink_feed_address: ContractAddress,
+            threshold_value: u256,
+            condition: u8
         ) -> u32 {
             let current_time = get_block_timestamp();
             assert(resolution_date > current_time, 'Resolution date must be future');
+            assert(condition <= 1_u8, 'Invalid condition');
             
             let market_id = self.market_count.read();
             self.market_count.write(market_id + 1);
@@ -190,8 +228,9 @@ mod Market {
                 total_yes: 0,
                 total_no: 0,
                 total_pool: 0,
-                oracle_pair_id,
+                chainlink_feed_address,
                 threshold_value,
+                condition,
             };
             
             self.markets.entry(market_id).write(market_info);
@@ -264,14 +303,23 @@ mod Market {
             assert(!market.resolved, 'Market already resolved');
             assert(get_block_timestamp() >= market.resolution_date, 'Resolution date not reached');
             
-            // Query Pragma oracle
-            let oracle = self.pragma_oracle.read();
-            let dispatcher = IPragmaOracleDispatcher { contract_address: oracle };
-            let (oracle_value, _timestamp) = dispatcher.get_value(market.oracle_pair_id);
+            // Query Chainlink Aggregator for latest price
+            let feed_address = market.chainlink_feed_address;
+            let aggregator_dispatcher = IChainlinkAggregatorDispatcher { contract_address: feed_address };
             
-            // Compare oracle value with threshold
-            // YES if oracle_value >= threshold_value, NO otherwise
-            let result = oracle_value >= market.threshold_value;
+            // Get latest answer (price) from Chainlink feed
+            // Chainlink prices are returned with 8 decimals (e.g., BTC/USD = 50000 * 10^8)
+            let price = aggregator_dispatcher.latest_answer();
+            
+            // Compare price with threshold based on condition
+            // condition: 0 = less than, 1 = greater than or equal
+            let result = if market.condition == 0 {
+                // Less than: YES if price < threshold
+                price < market.threshold_value
+            } else {
+                // Greater than or equal: YES if price >= threshold
+                price >= market.threshold_value
+            };
             
             market.resolved = true;
             market.result = result;
@@ -304,6 +352,41 @@ mod Market {
             self.emit(MarketResolved {
                 market_id,
                 result,
+            });
+        }
+        
+        fn resolve_market_with_uma(
+            ref self: ContractState,
+            market_id: u32,
+            question_id: felt252
+        ) {
+            let caller = get_caller_address();
+            assert(caller == self.admin.read(), 'Only admin can resolve');
+            
+            let mut market = self.markets.entry(market_id).read();
+            assert(!market.resolved, 'Market already resolved');
+            assert(get_block_timestamp() >= market.resolution_date, 'Resolution date not reached');
+            
+            // Query UMA oracle
+            let uma_oracle = self.uma_oracle.read();
+            let dispatcher = IUMAOracleDispatcher { contract_address: uma_oracle };
+            
+            // Check if proposal is finalized
+            let is_finalized = dispatcher.is_finalized(question_id);
+            assert(is_finalized, 'UMA proposal not finalized yet');
+            
+            // Get proposal answer
+            let (answer, _proposer, _bond, _created_at, _status) = dispatcher.get_proposal(question_id);
+            
+            // Use the answer from UMA oracle
+            market.resolved = true;
+            market.result = answer;
+            
+            self.markets.entry(market_id).write(market);
+            
+            self.emit(MarketResolved {
+                market_id,
+                result: answer,
             });
         }
         
@@ -378,4 +461,5 @@ mod Market {
             (bet.amount, bet.side)
         }
     }
+    
 }

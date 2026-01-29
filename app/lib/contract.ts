@@ -22,8 +22,9 @@ let CONTRACT_ABI: any[] = [
           { name: 'description', type: 'core::felt252' },
           { name: 'resolution_date', type: 'core::integer::u64' },
           { name: 'creator', type: 'core::starknet::contract_address::ContractAddress' },
-          { name: 'oracle_pair_id', type: 'core::felt252' },
+          { name: 'chainlink_feed_address', type: 'core::starknet::contract_address::ContractAddress' },
           { name: 'threshold_value', type: 'core::integer::u256' },
+          { name: 'condition', type: 'core::integer::u8' },
         ],
         outputs: [{ type: 'core::integer::u32' }],
         state_mutability: 'external',
@@ -52,6 +53,16 @@ let CONTRACT_ABI: any[] = [
         inputs: [
           { name: 'market_id', type: 'core::integer::u32' },
           { name: 'result', type: 'core::bool' },
+        ],
+        outputs: [],
+        state_mutability: 'external',
+      },
+      {
+        type: 'function',
+        name: 'resolve_market_with_uma',
+        inputs: [
+          { name: 'market_id', type: 'core::integer::u32' },
+          { name: 'question_id', type: 'core::felt252' },
         ],
         outputs: [],
         state_mutability: 'external',
@@ -225,8 +236,9 @@ export class MarketContract {
     question: string,
     description: string,
     resolutionDate: bigint,
-    oraclePairId: string,
-    thresholdValue: bigint
+    chainlinkFeedAddress: string, // ContractAddress as hex string
+    thresholdValue: bigint,
+    condition: number = 1 // 0 = less than, 1 = greater than or equal
   ): Promise<bigint> {
     try {
       await this.initialize();
@@ -243,8 +255,9 @@ export class MarketContract {
       description,
       resolutionDate,
       this.account.address,
-      oraclePairId,
-      thresholdValue
+      chainlinkFeedAddress,
+      thresholdValue,
+      condition
     );
     return result;
   }
@@ -274,6 +287,15 @@ export class MarketContract {
     if (!this.contract) throw new Error('Contract not initialized');
     
     await this.contract.resolve_market_manual(marketId, result);
+  }
+
+  // Resolve market with UMA oracle
+  async resolveMarketWithUMA(marketId: number, questionId: string): Promise<void> {
+    await this.initialize();
+    if (!this.account) throw new Error('Account not connected');
+    if (!this.contract) throw new Error('Contract not initialized');
+    
+    await this.contract.resolve_market_with_uma(marketId, questionId);
   }
 
   // Claim payout
